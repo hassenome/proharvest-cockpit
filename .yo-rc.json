@@ -1,0 +1,31 @@
+{
+  "generator-jhipster": {
+    "promptValues": {
+      "nativeLanguage": "en"
+    },
+    "jhipsterVersion": "6.10.4",
+    "applicationType": "monolith",
+    "baseName": "cockpit",
+    "useSass": true,
+    "clientPackageManager": "npm",
+    "clientFramework": "angularX",
+    "clientTheme": "united",
+    "clientThemeVariant": "primary",
+    "authenticationType": "oauth2",
+    "cacheProvider": "no",
+    "databaseType": "sql",
+    "devDatabaseType": "sql",
+    "prodDatabaseType": "sql",
+    "creationTimestamp": 1604526442989,
+    "testFrameworks": [],
+    "jhiPrefix": "jhi",
+    "entitySuffix": "",
+    "dtoSuffix": "DTO",
+    "otherModules": [],
+    "enableTranslation": true,
+    "nativeLanguage": "en",
+    "languages": ["en", "fr"],
+    "blueprints": [],
+    "skipServer": true
+  }
+}
