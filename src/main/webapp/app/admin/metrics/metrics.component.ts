@@ -1,40 +1,68 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { flatMap } from 'rxjs/operators';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
 
-import { MetricsService, Metrics, MetricsKey, ThreadDump, Thread } from './metrics.service';
+import { Metrics, MetricsKey, MetricsService, Thread, ThreadDump } from './metrics.service';
+import { Route } from 'app/shared/routes/route.model';
+import { RoutesService } from 'app/shared/routes/routes.service';
+import { map, switchMap, takeUntil } from 'rxjs/operators';
+import { PILOT_ID, CONSUL_URL } from 'app/app.constants';
 
 @Component({
   selector: 'jhi-metrics',
-  templateUrl: './metrics.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './metrics.component.html'
 })
-export class MetricsComponent implements OnInit {
+export class MetricsMonitoringComponent implements OnInit, OnDestroy {
   metrics?: Metrics;
   threads?: Thread[];
   updatingMetrics = true;
 
-  constructor(private metricsService: MetricsService, private changeDetector: ChangeDetectorRef) {}
+  activeRoute?: Route;
+  activeRouteIsPilot?: Boolean;
+  unsubscribe$ = new Subject();
+
+  constructor(private metricsService: MetricsService, private changeDetector: ChangeDetectorRef, private routesService: RoutesService) {}
 
   ngOnInit(): void {
-    this.refresh();
+    this.routesService.routeChanged$.pipe(takeUntil(this.unsubscribe$)).subscribe(route => {
+      this.activeRoute = route;
+      this.activeRouteIsPilot = (this.activeRoute.serviceId === PILOT_ID.serviceId);
+      this.refreshActiveRouteMetrics();
+    });
   }
 
   refresh(): void {
-    this.updatingMetrics = true;
-    this.metricsService
-      .getMetrics()
-      .pipe(
-        flatMap(
-          () => this.metricsService.threadDump(),
-          (metrics: Metrics, threadDump: ThreadDump) => {
-            this.metrics = metrics;
-            this.threads = threadDump.threads;
-            this.updatingMetrics = false;
-            this.changeDetector.detectChanges();
-          }
+    this.routesService.reloadRoutes();
+  }
+
+  refreshActiveRouteMetrics(): void {
+    if (this.activeRoute) {
+      this.updatingMetrics = true;
+      this.metricsService
+        .getServiceMetrics(this.activeRoute)
+        .pipe(
+          takeUntil(this.unsubscribe$),
+          switchMap((metrics: Metrics) =>
+            this.metricsService.serviceThreadDump(this.activeRoute).pipe(
+              takeUntil(this.unsubscribe$),
+              map((threadDump: ThreadDump) => {
+                this.metrics = metrics;
+                this.threads = threadDump.threads;
+                this.updatingMetrics = false;
+                this.changeDetector.detectChanges();
+              })
+            )
+          )
         )
-      )
-      .subscribe();
+        .subscribe({
+          error: error => {
+            if (error.status === 500 || error.status === 404) {
+              this.routesService.routeDown(this.activeRoute);
+            }
+          }
+        });
+    } else {
+      this.routesService.routeDown(this.activeRoute);
+    }
   }
 
   metricsKeyExists(key: MetricsKey): boolean {
@@ -43,5 +71,15 @@ export class MetricsComponent implements OnInit {
 
   metricsKeyExistsAndObjectNotEmpty(key: MetricsKey): boolean {
     return this.metrics && this.metrics[key] && JSON.stringify(this.metrics[key]) !== '{}';
+  }
+
+  ngOnDestroy(): void {
+    // prevent memory leak when component destroyed
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
+  }
+
+  openConsul(): void {
+    window.open(CONSUL_URL + "ui/dc1/services/" + this.activeRoute?.serviceId , '_blank');    
   }
 }

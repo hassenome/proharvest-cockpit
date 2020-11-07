@@ -11,6 +11,10 @@ Navbar
   color: $navbar-dark-color;
 }
 
+.navbar-subtitle {
+  font-size: 0.95em;
+}
+
 .profile-image {
   height: 1.75em;
   width: 1.75em;
@@ -49,6 +53,6 @@ Logo styles
   width: 45px;
   display: inline-block;
   vertical-align: middle;
-  background: url('../../../content/images/logo-jhipster.png') no-repeat center center;
+  background: url('../../../content/images/proharvest-logo.png') no-repeat center center;
   background-size: contain;
 }

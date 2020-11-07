@@ -1,0 +1,27 @@
+<div class="route-selector d-inline-flex" *ngIf="routes">
+    <div ngbDropdown #dropId="ngbDropdown" placement="bottom-right">
+        <button class="btn btn-outline-primary" id="sortMenu" ngbDropdownToggle [innerHTML]="getActiveRoute()"></button>
+        <div ngbDropdownMenu aria-labelledby="sortMenu" aria-expanded="true" (click)="$event.stopPropagation()">
+            <p class="d-flex">
+                <input type="search" class="form-control d-flex search" placeholder="Search an application..."
+                       [(ngModel)]="searchedInstance" (click)="$event.stopPropagation()" (input)="searchByAppName()">
+            </p>
+            <div *ngFor="let app of routes">
+                {{app | json}}
+                <span class="dropdown-header" (click)="$event.stopPropagation()">Available services</span>
+                <button class="dropdown-item"
+                        (click)="setActiveRoute(app); closeDropDown(dropId);" [ngClass]="state(app)">
+
+                    <span>{{app.serviceId | uppercase}} {{app.serviceInstances.length > 0 ? ' (' + app.serviceInstances.length + ')' : '' }}</span>
+                    <span class="badge badge-pill font-weight-normal" [ngClass]="getBadgeClassRoute(app)">
+                        {{app.status}}
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <jhi-refresh-selector></jhi-refresh-selector>
+
+    <p *ngIf="updatingRoutes && (!routes || routes.length == 0)">Loading...</p>
+</div>
